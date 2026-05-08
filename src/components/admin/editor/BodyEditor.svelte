@@ -1,35 +1,22 @@
 <script lang="ts">
-import type { MarkdownToolbarCommand, MarkdownToolbarState, MarkdownToolId } from './markdown-tools';
+import type { MarkdownHeadingLevel, MarkdownToolbarCommand, MarkdownToolId } from './markdown-tools';
 
 type Props = {
   value: string;
   disabled?: boolean;
-  bodyPersistEnabled?: boolean;
   toolbarCommand?: MarkdownToolbarCommand | null;
-  onToolbarStateChange?: (state: MarkdownToolbarState) => void;
+  onScrollElementChange?: (element: HTMLTextAreaElement | null) => void;
 };
 
 let {
   value = $bindable(''),
   disabled = false,
-  bodyPersistEnabled = false,
   toolbarCommand = null,
-  onToolbarStateChange
+  onScrollElementChange
 }: Props = $props();
 
-let textareaEl: HTMLTextAreaElement | null = null;
-let selectionStart = $state(0);
-let selectionEnd = $state(0);
+let textareaEl = $state<HTMLTextAreaElement | null>(null);
 let appliedToolbarCommandId = 0;
-
-const lineCount = $derived(value.length === 0 ? 1 : value.split(/\r\n|\r|\n/).length);
-const charCount = $derived(value.length);
-
-const updateSelectionState = () => {
-  if (!textareaEl) return;
-  selectionStart = textareaEl.selectionStart ?? 0;
-  selectionEnd = textareaEl.selectionEnd ?? selectionStart;
-};
 
 const focusTextarea = () => {
   textareaEl?.focus();
@@ -39,77 +26,7 @@ const commitTextareaValue = (nextSelectionStart: number, nextSelectionEnd = next
   if (!textareaEl) return;
   value = textareaEl.value;
   textareaEl.setSelectionRange(nextSelectionStart, nextSelectionEnd);
-  updateSelectionState();
   focusTextarea();
-};
-
-const getLineAt = (source: string, cursor: number): string => {
-  const lineStart = source.lastIndexOf('\n', Math.max(0, cursor - 1)) + 1;
-  const lineEndIndex = source.indexOf('\n', cursor);
-  const lineEnd = lineEndIndex === -1 ? source.length : lineEndIndex;
-  return source.slice(lineStart, lineEnd);
-};
-
-const findSingleStarBefore = (source: string, cursor: number): number => {
-  for (let index = cursor - 1; index >= 0; index -= 1) {
-    if (source[index] !== '*') continue;
-    if (source[index - 1] === '*' || source[index + 1] === '*') continue;
-    return index;
-  }
-  return -1;
-};
-
-const findSingleStarAfter = (source: string, cursor: number): number => {
-  for (let index = cursor; index < source.length; index += 1) {
-    if (source[index] !== '*') continue;
-    if (source[index - 1] === '*' || source[index + 1] === '*') continue;
-    return index;
-  }
-  return -1;
-};
-
-const isWrappedBy = (source: string, before: string, after: string, start: number, end: number): boolean => {
-  const left = source.lastIndexOf(before, start);
-  if (left === -1) return false;
-  const right = source.indexOf(after, end);
-  if (right === -1 || right <= left) return false;
-  return left + before.length <= start && end <= right;
-};
-
-const isInsideSingleStar = (source: string, start: number, end: number): boolean => {
-  const left = findSingleStarBefore(source, start);
-  if (left === -1) return false;
-  const right = findSingleStarAfter(source, end);
-  if (right === -1 || right <= left) return false;
-  return left + 1 <= start && end <= right;
-};
-
-const isInsideLink = (source: string, start: number, end: number): boolean => {
-  const left = source.lastIndexOf('[', start);
-  if (left === -1) return false;
-  const middle = source.indexOf('](', left);
-  if (middle === -1) return false;
-  const right = source.indexOf(')', middle);
-  if (right === -1) return false;
-  return start >= left + 1 && end <= right;
-};
-
-const createToolbarState = (source: string, start: number, end: number): MarkdownToolbarState => {
-  const line = getLineAt(source, start);
-  const taskList = /^\s*[-*+]\s+\[[ xX]\]\s+/.test(line);
-  const bold = isWrappedBy(source, '**', '**', start, end);
-
-  return {
-    heading: /^\s*#{1,6}\s+/.test(line),
-    bold,
-    italic: !bold && isInsideSingleStar(source, start, end),
-    quote: /^\s*>\s?/.test(line),
-    link: isInsideLink(source, start, end),
-    code: isWrappedBy(source, '`', '`', start, end),
-    list: !taskList && /^\s*[-*+]\s+/.test(line),
-    orderedList: /^\s*\d+\.\s+/.test(line),
-    taskList
-  };
 };
 
 const wrapSelection = (before: string, after: string, placeholder: string) => {
@@ -169,6 +86,41 @@ const toggleLinePrefix = (prefix: string) => {
   commitTextareaValue(lineStart, lineStart + next.length);
 };
 
+const setHeadingLevel = (level: MarkdownHeadingLevel) => {
+  if (!textareaEl) return;
+  focusTextarea();
+
+  const prefix = `${'#'.repeat(level)} `;
+  const start = textareaEl.selectionStart ?? 0;
+  const end = textareaEl.selectionEnd ?? start;
+  const lineStart = value.lastIndexOf('\n', Math.max(0, start - 1)) + 1;
+  const lineEndIndex = value.indexOf('\n', end);
+  const lineEnd = lineEndIndex === -1 ? value.length : lineEndIndex;
+  const segment = value.slice(lineStart, lineEnd);
+  const next = segment
+    .split('\n')
+    .map((line) => {
+      const headingMatch = line.match(/^( {0,3})#{1,6}(?:[ \t]+(.*))?$/);
+      if (headingMatch) {
+        const [, indent, text] = headingMatch;
+        return `${indent}${prefix}${text ?? ''}`;
+      }
+
+      const leadingWhitespace = line.match(/^\s*/)?.[0] ?? '';
+      const leadingSpaces = line.match(/^ */)?.[0] ?? '';
+      if (leadingWhitespace.includes('\t') || leadingSpaces.length > 3) {
+        const strippedLine = line.replace(/^\s+/, '');
+        return `${prefix}${strippedLine.replace(/^#{1,6}\s+/, '')}`;
+      }
+
+      return `${leadingSpaces}${prefix}${line.slice(leadingSpaces.length)}`;
+    })
+    .join('\n');
+
+  textareaEl.setRangeText(next, lineStart, lineEnd, 'select');
+  commitTextareaValue(lineStart, lineStart + next.length);
+};
+
 const toggleOrderedList = () => {
   if (!textareaEl) return;
   focusTextarea();
@@ -206,9 +158,6 @@ const applyMarkdownTool = (toolId: MarkdownToolId) => {
   if (disabled) return;
 
   switch (toolId) {
-    case 'heading':
-      toggleLinePrefix('## ');
-      break;
     case 'bold':
       wrapSelection('**', '**', 'text');
       break;
@@ -245,19 +194,25 @@ const applyMarkdownTool = (toolId: MarkdownToolId) => {
 };
 
 $effect(() => {
-  onToolbarStateChange?.(createToolbarState(value, selectionStart, selectionEnd));
-});
-
-$effect(() => {
   const command = toolbarCommand;
   if (!command || command.id === appliedToolbarCommandId) return;
 
   appliedToolbarCommandId = command.id;
   if (command.kind === 'insert') {
     insertText(command.text);
+  } else if (command.kind === 'heading') {
+    setHeadingLevel(command.level);
   } else {
     applyMarkdownTool(command.toolId);
   }
+});
+
+$effect(() => {
+  onScrollElementChange?.(textareaEl);
+
+  return () => {
+    onScrollElementChange?.(null);
+  };
 });
 </script>
 
@@ -271,19 +226,6 @@ $effect(() => {
       bind:this={textareaEl}
       spellcheck="false"
       {disabled}
-      onfocus={updateSelectionState}
-      oninput={updateSelectionState}
-      onkeyup={updateSelectionState}
-      onmouseup={updateSelectionState}
-      onselect={updateSelectionState}
     ></textarea>
   </label>
-
-  <div class="admin-editor-body__meta">
-    <span>{lineCount} lines</span>
-    <span>{charCount} chars</span>
-    {#if !bodyPersistEnabled}
-      <span>当前上下文未启用正文写盘</span>
-    {/if}
-  </div>
 </section>

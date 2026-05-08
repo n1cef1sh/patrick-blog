@@ -240,11 +240,11 @@
   margin: 0;
   align-self: center;
   transform: none;
-  min-height: 34px;
+  min-height: var(--admin-control-height-compact);
   max-width: min(100%, 420px);
-  padding-block: 5px;
+  padding-block: 0;
   white-space: normal;
-  line-height: 1.45;
+  line-height: 1.2;
 }
 
 .admin-status::before {

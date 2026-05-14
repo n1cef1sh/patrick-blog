@@ -22,19 +22,16 @@
 }
 
 .admin-checks-toolbar__head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px 16px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 8px 16px;
   min-width: 0;
 }
 
 .admin-checks-toolbar__lead {
-  display: inline-flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 8px 12px;
+  display: grid;
+  gap: 7px;
   min-width: 0;
 }
 
@@ -49,10 +46,15 @@
   align-items: baseline;
   gap: 0;
   min-width: 0;
+  max-width: 100%;
   margin-left: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
 }
 
 .admin-checks-toolbar__separator {
+  flex: 0 0 auto;
   color: color-mix(in srgb, var(--faint) 82%, transparent);
   font-size: var(--admin-text-sm);
   line-height: 1;
@@ -60,10 +62,11 @@
 
 .admin-checks-toolbar__filters {
   display: flex;
-  flex-wrap: wrap;
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
   gap: 8px 14px;
   align-items: baseline;
-  justify-content: flex-end;
+  justify-content: flex-start;
   min-width: 0;
   margin-left: 0;
 }
@@ -74,6 +77,7 @@
 
   display: inline-flex;
   align-items: center;
+  flex: 0 0 auto;
   gap: 7px;
   min-height: 28px;
   padding: 0 2px 1px;
@@ -82,6 +86,7 @@
   text-decoration: none;
   font-size: 15px;
   font-weight: 500;
+  white-space: nowrap;
   transition: color 160ms ease, opacity 160ms ease;
 }
 
@@ -144,9 +149,7 @@
 }
 
 .admin-checks-toolbar__action--head {
-  margin-left: auto;
-  justify-self: auto;
-  flex: 0 0 auto;
+  justify-self: end;
 }
 
 .admin-checks-toolbar__refresh-link {
@@ -440,47 +443,4 @@
 
 .admin-checks-empty__icon-mark {
   display: block;
-}
-
-@media (max-width: 900px) {
-  .admin-checks-toolbar__head {
-    align-items: start;
-    justify-content: flex-start;
-  }
-
-  .admin-checks-toolbar__lead {
-    width: 100%;
-  }
-
-  .admin-checks-toolbar__filters-wrap {
-    width: 100%;
-    margin-left: 0;
-  }
-
-  .admin-checks-toolbar__separator {
-    flex: 0 0 auto;
-  }
-
-  .admin-checks-toolbar__filters {
-    flex: 1 1 auto;
-    justify-content: flex-start;
-  }
-
-  .admin-checks-category__head,
-  .admin-checks-issue__head {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .admin-checks-toolbar__summary {
-    grid-template-columns: 1fr;
-  }
-
-  .admin-checks-toolbar__action {
-    justify-self: flex-start;
-  }
-
-  .admin-checks-toolbar__action--head {
-    margin-left: 0;
-  }
 }

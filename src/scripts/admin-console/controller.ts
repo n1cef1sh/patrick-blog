@@ -245,7 +245,7 @@ export const createAdminThemeController = ({
   };
 
   const loadFromApi = async (): Promise<void> => {
-    uiState.setStatus('loading', `正在读取 ${ADMIN_SETTINGS_API_PATH}`, { announce: false });
+    uiState.setStatus('loading', '加载中', { announce: false });
     try {
       const response = await fetch(endpoint, {
         method: 'GET',
@@ -265,7 +265,7 @@ export const createAdminThemeController = ({
       loadPayload(payload, 'remote');
     } catch (error) {
       if (hasInitialSettings()) {
-        uiState.setStatus('warn', '接口读取失败，继续使用初始配置');
+        uiState.setStatus('warn', '接口读取失败');
       } else if (!uiState.isConsoleLocked()) {
         setInitialLoadError(error instanceof Error ? error.message : '初始化请求失败，请稍后重试');
       }
@@ -285,7 +285,7 @@ export const createAdminThemeController = ({
 
     const current = canonicalize(draft);
     uiState.setValidating(true);
-    uiState.setStatus('loading', '正在进行服务端预检');
+    uiState.setStatus('loading', '正在预检');
 
     try {
       if (!currentRevision) {
@@ -331,7 +331,7 @@ export const createAdminThemeController = ({
       clearInvalidFields();
       clearExternalUpdate();
       uiState.clearErrorBanner();
-      uiState.setStatus('ok', '服务端预检通过，可直接保存');
+      uiState.setStatus('ok', '检查通过');
     } catch (error) {
       console.error(error);
       clearInvalidFields();
@@ -366,7 +366,7 @@ export const createAdminThemeController = ({
     clearInvalidFields();
     uiState.clearErrorBanner();
     uiState.setDirty(false);
-    uiState.setStatus('ready', '已重置为最近一次加载值');
+    uiState.setStatus('ready', '已重置');
   };
 
   const saveSettings = async (): Promise<void> => {
@@ -381,7 +381,7 @@ export const createAdminThemeController = ({
     const current = canonicalize(draft);
 
     uiState.setSaving(true);
-    uiState.setStatus('loading', '正在保存到 src/data/settings/*.json');
+    uiState.setStatus('loading', '正在保存');
 
     try {
       if (!currentRevision) {
@@ -414,7 +414,7 @@ export const createAdminThemeController = ({
 
         uiState.setErrors(serverErrors.length ? serverErrors : ['保存失败，请稍后重试'], { title: '保存失败' });
         if (response.status === 404) {
-          uiState.setStatus('error', '当前环境不允许写入（仅 DEV 可写）', { announce: false });
+          uiState.setStatus('error', '无法写入', { announce: false });
         } else {
           uiState.setStatus('error', '保存失败', { announce: false });
         }
@@ -424,7 +424,7 @@ export const createAdminThemeController = ({
 
       if (extractSettingsPayload(payload)) {
         loadPayload(payload, 'remote', { announceStatus: false });
-        uiState.setStatus('ok', '保存成功，请刷新目标页面查看效果');
+        uiState.setStatus('ok', '保存成功');
       } else {
         baseline = current;
         clearExternalUpdate();

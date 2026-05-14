@@ -1062,12 +1062,8 @@
 }
 
 @media (max-width: 860px) {
-  .admin-data-panel,
   .admin-data-panel--import {
     grid-template-columns: 1fr;
-  }
-
-  .admin-data-panel--import {
     grid-template-areas:
       'drop'
       'copy'
@@ -1075,18 +1071,7 @@
     gap: 18px;
   }
 
-  .admin-data-manifest__row {
-    grid-template-columns: 1fr;
-    gap: 5px;
-  }
-
-  .admin-data-manifest__value {
-    justify-self: stretch;
-    text-align: left;
-  }
-
   .admin-data-dropzone {
-    width: 100%;
     min-height: 192px;
   }
 
@@ -1110,12 +1095,8 @@
 
 @media (max-width: 640px) {
   .admin-data-panel {
+    grid-template-columns: 1fr;
     padding: 20px 16px;
-    border-radius: var(--admin-control-radius);
-  }
-
-  .admin-data-dropzone {
-    border-radius: calc(var(--admin-control-radius) + 4px);
   }
 
   .admin-data-dropzone__summary {

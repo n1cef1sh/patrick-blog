@@ -47,6 +47,9 @@ const yearRange = footerShowCurrentYear && currentYear > footerStartYear
   : `${footerStartYear}`;
 const base = import.meta.env.BASE_URL ?? '/';
 const withBase = createWithBase(base);
+const bodyClassNames = typeof bodyClass === 'string' ? bodyClass.split(/\s+/).filter(Boolean) : [];
+const isAdminPage = bodyClassNames.includes('admin-page');
+const isDev = import.meta.env.DEV;
 ---
 
 <!doctype html>
@@ -104,7 +107,7 @@ const withBase = createWithBase(base);
   >
     <a class="skip-link" href="#content">跳到内容</a>
     <div class="shell" data-sidebar-divider={sidebarDividerVariant}>
-      <Sidebar siteTitle={brandTitle} activeNavId={activeNavId} />
+      <Sidebar siteTitle={brandTitle} activeNavId={activeNavId} isAdminContext={isAdminPage} isDev={isDev} />
       <div class="divider" aria-hidden="true"></div>
       <main id="content" class="content" tabindex="-1">
         <div class="content__inner">
@@ -127,6 +130,7 @@ const withBase = createWithBase(base);
     </template>
     <script>
       import '../scripts/sidebar-theme.ts';
+      import '../scripts/sidebar-rail-nav.ts';
     </script>
   </body>
 </html>

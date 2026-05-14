@@ -157,6 +157,13 @@
   min-height: calc(100vh - 40px);
 }
 
+.admin-console--shell {
+  --admin-shell-content-gap: 18px;
+  --admin-shell-navless-overview-gap: 36px;
+  --admin-shell-navless-content-gap: 28px;
+  --admin-shell-rail-content-gap: 14px;
+}
+
 .admin-console [hidden] {
   display: none;
 }
@@ -366,18 +373,20 @@
 }
 
 .admin-shell {
-  margin-top: 18px;
+  margin-top: var(--admin-shell-content-gap);
   min-width: 0;
   display: grid;
   gap: 16px;
 }
 
-.admin-console--shell[data-admin-nav-visible='false'][data-admin-route='overview'] > .admin-shell {
-  margin-top: 36px;
+.admin-console--shell[data-admin-header-visible='true'][data-admin-nav-visible='false'][data-admin-route='overview']
+  > .admin-shell {
+  margin-top: var(--admin-shell-navless-overview-gap);
 }
 
-.admin-console--shell[data-admin-nav-visible='false']:not([data-admin-route='overview']) > .admin-shell {
-  margin-top: 28px;
+.admin-console--shell[data-admin-header-visible='true'][data-admin-nav-visible='false']:not([data-admin-route='overview'])
+  > .admin-shell {
+  margin-top: var(--admin-shell-navless-content-gap);
 }
 
 .admin-console--shell[data-admin-header-visible='false'] > .admin-shell {
@@ -1318,15 +1327,28 @@
   box-shadow: var(--admin-btn-tool-active-shadow, none);
 }
 
+/* Admin 内部窄窗口可用性规则；公开站点 shell/sidebar 断点已在 layout.css 中排除 Admin。 */
 @media (max-width: 900px) {
   .page-header--admin {
-    flex-direction: column;
+    flex-direction: row;
+    flex-wrap: nowrap;
     align-items: flex-start;
   }
 
-  .admin-status {
+  .admin-heading {
+    flex: 1 1 auto;
+  }
+
+  .admin-status-slot {
+    align-self: flex-start;
+    flex: 0 0 auto;
+    max-width: max-content;
+    margin-left: auto;
+  }
+
+  .admin-status-slot .admin-status:not(.admin-status--inline) {
     margin-left: 0;
-    transform: translateY(0);
+    transform: translateY(12px);
   }
 
   .admin-banner__retry {
@@ -1339,26 +1361,13 @@
     gap: 2px;
   }
 
-  .admin-route-nav {
-    overflow-x: auto;
-    scrollbar-width: thin;
-    padding-bottom: 2px;
+  body.admin-page .admin-console--shell > .admin-route-nav {
+    display: none;
   }
 
-  .admin-route-nav__list {
-    flex-wrap: nowrap;
-    width: max-content;
-    min-width: 100%;
-    gap: 8px 16px;
+  body.admin-page
+    .admin-console--shell[data-admin-header-visible='true'][data-admin-nav-visible='true']
+    > .admin-shell {
+    margin-top: var(--admin-shell-rail-content-gap);
   }
-
-  .admin-route-nav__item {
-    min-width: fit-content;
-  }
-
-  .admin-route-nav__link {
-    min-height: 34px;
-    padding-bottom: 10px;
-  }
-
 }

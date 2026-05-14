@@ -1,21 +1,48 @@
 ---
+import type { ComponentProps } from 'astro/types';
+import AdminIcon from './admin/AdminIcon.astro';
 import UiIcon from './UiIcon.astro';
+import { ADMIN_ROUTES, getAdminRoute, type AdminRouteId } from '../lib/admin-console/routes';
 import { ADMIN_NAV_ORNAMENT_DEFAULT } from '../lib/admin-console/theme-shared';
 import { createWithBase } from '../utils/format';
 import { getSidebarHref, getThemeSettings, type SidebarNavId } from '../lib/theme-settings';
 
 const {
   siteTitle = 'Whono',
-  activeNavId
+  activeNavId,
+  isAdminContext = false,
+  isDev = false
 } = Astro.props as {
   siteTitle?: string;
   activeNavId?: SidebarNavId;
+  isAdminContext?: boolean;
+  isDev?: boolean;
+};
+
+type AdminRailRouteId = Exclude<AdminRouteId, 'overview'>;
+type AdminRouteDefinition = (typeof ADMIN_ROUTES)[number];
+type AdminRailRouteDefinition = Extract<AdminRouteDefinition, { id: AdminRailRouteId }>;
+
+type AdminIconName = ComponentProps<typeof AdminIcon>['name'];
+type AdminRailRouteIconName = Extract<
+  AdminIconName,
+  'palette' | 'admin-page' | 'images' | 'shield-check' | 'database'
+>;
+
+const ADMIN_RAIL_OVERVIEW_ICON_SIZE = 22;
+const ADMIN_ROUTE_ICONS: Record<AdminRailRouteId, AdminRailRouteIconName> = {
+  theme: 'palette',
+  content: 'admin-page',
+  images: 'images',
+  checks: 'shield-check',
+  data: 'database'
 };
 
 const pathname = Astro.url.pathname;
 const base = import.meta.env.BASE_URL ?? '/';
 const withBase = createWithBase(base);
 const homeHref = withBase('/');
+const adminOverviewHref = withBase('/admin/');
 const { settings } = getThemeSettings();
 const quote = settings.shell.quote;
 const nav = settings.shell.nav
@@ -31,10 +58,32 @@ const showReaderToggle = settings.ui.readingMode.showEntry;
 const showRssLink = settings.ui.sidebarActions.showRssLink;
 const showThemeToggle = settings.ui.sidebarActions.showThemeToggle;
 const showAdminEntry = settings.ui.sidebarActions.showAdminEntry && settings.site.adminOverview.publicVisible;
+const showAdminRouteRail = isAdminContext && isDev;
+const siteTitleLabel = `${siteTitle} 首页`;
+const mainSiteHomeLabel = '主站首页';
+const adminRailTitleLabel = getAdminRoute('overview').description;
+const isAdminOverviewActive = pathname === adminOverviewHref;
+const isAdminRailRoute = (route: AdminRouteDefinition): route is AdminRailRouteDefinition =>
+  route.id !== 'overview';
+const adminRailRoutes = ADMIN_ROUTES.filter(isAdminRailRoute);
 ---
 
 <aside class="sidebar">
-  <a class="sidebar__title" href={homeHref} aria-label={`${siteTitle} 首页`}>{siteTitle}</a>
+  <a class="sidebar__title sidebar__title--site" href={homeHref} aria-label={siteTitleLabel}>
+    <span class="sidebar__title-text">{siteTitle}</span>
+  </a>
+
+  {isAdminContext ? (
+    <a
+      class="sidebar__title sidebar__title--admin-rail"
+      href={adminOverviewHref}
+      aria-label={adminRailTitleLabel}
+      title={adminRailTitleLabel}
+      aria-current={isAdminOverviewActive ? 'page' : undefined}
+    >
+      <AdminIcon name="astro-logo-color" size={ADMIN_RAIL_OVERVIEW_ICON_SIZE} class="icon sidebar__title-icon" />
+    </a>
+  ) : null}
 
   <div class="sidebar__quote">
     {quote.split('\n').map((line) => (
@@ -64,11 +113,66 @@ const showAdminEntry = settings.ui.sidebarActions.showAdminEntry && settings.sit
     })}
   </ul>
 
+  {showAdminRouteRail ? (
+    <nav class="admin-rail-routes" aria-label="后台页面">
+      {adminRailRoutes.map((route) => {
+        const href = withBase(route.href);
+        const isActive = pathname === href || pathname.startsWith(href);
+        return (
+          <a
+            class="icon-button admin-rail-route"
+            href={href}
+            aria-label={`${route.label}：${route.description}`}
+            aria-current={isActive ? 'page' : undefined}
+            title={`${route.label}：${route.description}`}
+          >
+            <AdminIcon name={ADMIN_ROUTE_ICONS[route.id]} class="icon" />
+          </a>
+        );
+      })}
+    </nav>
+  ) : null}
+
   <div class="sidebar-actions">
+    {isAdminContext ? (
+      <a
+        class="icon-button public-home-link sidebar-action--rail-only"
+        href={homeHref}
+        aria-label={mainSiteHomeLabel}
+        title={mainSiteHomeLabel}
+      >
+        <AdminIcon name="admin-home" class="icon" />
+      </a>
+    ) : null}
+
+    {isAdminContext && nav.length > 0 ? (
+      <details class="public-nav-group sidebar-action--rail-only">
+        <summary class="icon-button public-nav-group__summary" aria-label="前台页面" title="前台页面">
+          <AdminIcon name="layout-list" class="icon" />
+        </summary>
+        <div class="public-nav-group__popover">
+          <ul class="public-nav-group__list">
+            {nav.map((item) => {
+              const isActive = activeNavId
+                ? item.id === activeNavId
+                : pathname === item.href || (item.href !== homeHref && pathname.startsWith(item.href));
+              return (
+                <li>
+                  <a class="public-nav-group__link" href={item.href} aria-current={isActive ? 'page' : undefined}>
+                    <span>{item.label}</span>
+                  </a>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      </details>
+    ) : null}
+
     {showReaderToggle ? (
       <button
         id="reader-toggle"
-        class="icon-button reader-toggle"
+        class="icon-button reader-toggle sidebar-action--rail-hidden"
         type="button"
         aria-label="阅读模式"
         aria-pressed="false"
@@ -80,7 +184,12 @@ const showAdminEntry = settings.ui.sidebarActions.showAdminEntry && settings.sit
     ) : null}
 
     {showRssLink ? (
-      <a class="icon-button rss-link" href={withBase('/archive/rss.xml')} aria-label="RSS 订阅" title="RSS 订阅">
+      <a
+        class="icon-button rss-link sidebar-action--rail-hidden"
+        href={withBase('/archive/rss.xml')}
+        aria-label="RSS 订阅"
+        title="RSS 订阅"
+      >
         <UiIcon name="rss" class="icon" />
       </a>
     ) : null}
@@ -100,7 +209,12 @@ const showAdminEntry = settings.ui.sidebarActions.showAdminEntry && settings.sit
     ) : null}
 
     {showAdminEntry ? (
-      <a class="icon-button admin-entry-link" href={withBase('/admin/')} aria-label="站点概览" title="站点概览">
+      <a
+        class="icon-button admin-entry-link sidebar-action--rail-hidden"
+        href={adminOverviewHref}
+        aria-label="站点概览"
+        title="站点概览"
+      >
         <UiIcon name="monitor-dot" class="icon" />
       </a>
     ) : null}

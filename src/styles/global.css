@@ -294,8 +294,9 @@ hr {
 /* ===============================
    响应式
 ================================ */
+/* 公开站点窄屏变量；AdminLayout 输出 body.admin-page 时不进入公开移动端壳层。 */
 @media (max-width: 900px) {
-  :root {
+  body:not(.admin-page) {
     color-scheme: light;
     --sidebar: 1fr;
     --tap-min-h: 44px;
@@ -305,7 +306,7 @@ hr {
     --header-gap: 4px;
   }
 
-  :root[data-theme="dark"] {
+  :root[data-theme="dark"] body:not(.admin-page) {
     color-scheme: dark;
     --bg: #1a1a1a;
     --text: #e5e5e5;
@@ -316,25 +317,25 @@ hr {
     --code-content-bg: #222222;
   }
 
-  .intro {
+  body:not(.admin-page) .intro {
     margin: 16px 0 22px;
   }
 
 }
 
 @media (min-width: 641px) and (max-width: 900px) {
-  :root {
+  body:not(.admin-page) {
     --pad-x: 28px;
   }
 
 }
 
 @media (max-width: 640px) {
-  :root {
+  body:not(.admin-page) {
     --pad-x: 18px;
   }
 
-  .intro {
+  body:not(.admin-page) .intro {
     margin: 12px 0 18px;
   }
 }

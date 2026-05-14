@@ -1,8 +1,12 @@
 <script lang="ts">
 import type { AdminEssayEditorValues } from '../../../lib/admin-console/content-shared';
 import { shouldGuardAdminNavigation } from '../../../scripts/admin-console/navigation-guard';
-import { initAdminDetailsMenus } from '../../../scripts/admin-content/details-menu';
 import {
+  closeClosestAdminDetailsMenu,
+  initAdminDetailsMenus
+} from '../../../scripts/admin-content/details-menu';
+import {
+  getPayloadDeleteResult,
   getPayloadErrors,
   getPayloadEssayBody,
   getPayloadEssayValues,
@@ -25,6 +29,7 @@ import PreviewPane from './PreviewPane.svelte';
 
 type StatusState = 'idle' | 'loading' | 'ready' | 'ok' | 'warn' | 'error';
 type EditorScrollSource = 'body' | 'preview';
+type EditorLayoutMode = 'stacked' | 'split';
 type StoredWriteFeedback = {
   statusState: StatusState;
   statusText: string;
@@ -42,11 +47,14 @@ const getPreviewDebounceMs = (source: string): number => {
 
 const LEAVE_CONFIRM_MESSAGE = '当前有未保存更改，确定要离开此页吗？';
 const ARTICLE_INFO_TRIGGER_SELECTOR = '[data-admin-article-info-trigger]';
+const PAGE_ACTIONS_HOST_SELECTOR = '[data-admin-editor-page-actions-host]';
 const FRONTMATTER_PANEL_ID = 'admin-editor-frontmatter-panel';
 const FRONTMATTER_ISSUE_PATHS = new Set(['title', 'date', 'description', 'tags', 'slug', 'badge', 'cover']);
 const STATUS_WAITING_SAVE = '等待保存';
 const STATUS_CLEAN = '无未保存更改';
 const STATUS_STATES: readonly StatusState[] = ['idle', 'loading', 'ready', 'ok', 'warn', 'error'];
+const EDITOR_LAYOUT_STORAGE_KEY = 'astro-whono:admin-editor:layout';
+const EDITOR_LAYOUT_MODES: readonly EditorLayoutMode[] = ['stacked', 'split'];
 const WRITE_FEEDBACK_STORAGE_PREFIX = 'astro-whono:admin-editor:write-feedback:';
 const WRITE_FEEDBACK_STORAGE_TTL_MS = 60 * 1000;
 const WRITE_FIELD_LABELS: Readonly<Record<string, string>> = {
@@ -87,10 +95,14 @@ const markdownTools = [
 
 type Props = {
   endpoint: string;
+  exportEndpoint: string;
+  deleteEndpoint: string;
   previewEndpoint: string;
   imageUploadEndpoint: string;
+  returnHref: string;
   collection: 'essay';
   entryId: string;
+  relativePath: string;
   defaultPublicSlug: string;
   revision: string;
   initialFrontmatter: AdminEssayEditorValues;
@@ -100,10 +112,14 @@ type Props = {
 
 let {
   endpoint,
+  exportEndpoint,
+  deleteEndpoint,
   previewEndpoint,
   imageUploadEndpoint,
+  returnHref,
   collection,
   entryId,
+  relativePath,
   defaultPublicSlug,
   revision,
   initialFrontmatter,
@@ -160,7 +176,37 @@ const isStoredWriteFeedback = (value: unknown): value is StoredWriteFeedback => 
   );
 };
 
+const isEditorLayoutMode = (value: unknown): value is EditorLayoutMode =>
+  EDITOR_LAYOUT_MODES.includes(value as EditorLayoutMode);
+
 const getWriteFieldLabel = (field: string): string => WRITE_FIELD_LABELS[field] ?? field;
+
+const buildContentExportHref = (baseEndpoint: string, collectionKey: string, contentEntryId: string): string => {
+  const params = new URLSearchParams({
+    collection: collectionKey,
+    entryId: contentEntryId
+  });
+  return `${baseEndpoint}?${params.toString()}`;
+};
+
+const readStoredEditorLayout = (): EditorLayoutMode | null => {
+  if (typeof window === 'undefined') return null;
+  try {
+    const storedLayout = window.localStorage.getItem(EDITOR_LAYOUT_STORAGE_KEY);
+    return isEditorLayoutMode(storedLayout) ? storedLayout : null;
+  } catch {
+    return null;
+  }
+};
+
+const storeEditorLayout = (layoutMode: EditorLayoutMode) => {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(EDITOR_LAYOUT_STORAGE_KEY, layoutMode);
+  } catch {
+    // 布局偏好只改善体验，不影响编辑主流程。
+  }
+};
 
 const clearStoredWriteFeedback = () => {
   if (typeof window === 'undefined') return;
@@ -220,6 +266,8 @@ let writeResult = $state<AdminContentWriteResult | null>(null);
 let previewHtml = $state('');
 let previewWarnings = $state<string[]>([]);
 let previewError = $state('');
+let editorLayout = $state<EditorLayoutMode>('stacked');
+let editorLayoutRestored = false;
 let previewRequestId = 0;
 let previewTimer: number | null = null;
 let activePreviewAbortController: AbortController | null = null;
@@ -232,6 +280,7 @@ let headingMenuEl = $state<HTMLDetailsElement | null>(null);
 let frontmatterPanelOpen = $state(initialSnapshot.articleInfoOpen);
 let articleInfoDialog = $state<ArticleInfoDialog | null>(null);
 let imageInsertOpen = $state(false);
+let topActionsEl = $state<HTMLDivElement | null>(null);
 let bodyScrollElement = $state<HTMLTextAreaElement | null>(null);
 let previewScrollElement = $state<HTMLElement | null>(null);
 let syncScrollEnabled = $state(true);
@@ -250,6 +299,9 @@ const isDirty = $derived(frontmatterDirty || bodyDirty);
 const canWriteContent = $derived(!busy && isDirty);
 const frontmatterIssueCount = $derived(issues.filter((issue) => FRONTMATTER_ISSUE_PATHS.has(issue.path)).length);
 const visibleWriteResult = $derived(!isDirty ? writeResult : null);
+const editorLayoutToggleLabel = $derived(editorLayout === 'split' ? '切换到上下布局' : '切换到左右布局');
+const editorLayoutToggleIcon = $derived(editorLayout === 'split' ? 'rows-2' : 'columns-2');
+const exportHref = $derived(buildContentExportHref(exportEndpoint, collection, entryId));
 const scrollSyncToggleLabel = $derived(syncScrollEnabled ? '关闭同步滚动' : '开启同步滚动');
 const scrollSyncControlDisabled = $derived(!bodyScrollElement || !previewScrollElement);
 const scrollTopControlDisabled = $derived(!bodyScrollElement && !previewScrollElement);
@@ -278,6 +330,12 @@ const syncDirtyStatus = () => {
   if (statusState === 'ready' && statusText === STATUS_WAITING_SAVE) {
     setStatus('ready', STATUS_CLEAN);
   }
+};
+
+const toggleEditorLayout = () => {
+  const nextLayout = editorLayout === 'split' ? 'stacked' : 'split';
+  editorLayout = nextLayout;
+  storeEditorLayout(nextLayout);
 };
 
 const applyToolbarTool = (toolId: MarkdownToolId) => {
@@ -603,6 +661,94 @@ const resetToBaseline = () => {
   setStatus('ready', '已还原');
 };
 
+const closeActionMenu = (target: EventTarget | null) => {
+  if (target instanceof HTMLElement) {
+    closeClosestAdminDetailsMenu(target, '.admin-editor-shell__action-more');
+  }
+};
+
+const handleActionMenuReset = (event: MouseEvent) => {
+  closeActionMenu(event.currentTarget);
+  resetToBaseline();
+};
+
+const handleActionMenuDownload = (event: MouseEvent) => {
+  closeActionMenu(event.currentTarget);
+};
+
+const deleteContentEntry = async (event: MouseEvent) => {
+  closeActionMenu(event.currentTarget);
+
+  if (busy) {
+    setStatus('warn', '操作进行中');
+    return;
+  }
+
+  const confirmed = window.confirm([
+    `确认删除《${frontmatter.title || entryId}》？`,
+    '',
+    `源文件：${relativePath}`,
+    ...(isDirty ? ['', '当前未保存改动不会写入文件，删除会移动当前源文件。'] : []),
+    '',
+    '文件会移到 .trash/content/，之后可从回收站手动恢复。'
+  ].join('\n'));
+  if (!confirmed) {
+    setStatus('ready', '已取消删除');
+    return;
+  }
+
+  busy = true;
+  clearWriteFeedback();
+  setStatus('loading', '正在移动到回收站');
+
+  try {
+    const deleteResponse = await fetch(deleteEndpoint, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json; charset=utf-8'
+      },
+      cache: 'no-store',
+      body: JSON.stringify({
+        collection,
+        entryId,
+        revision: currentRevision,
+        expectedRelativePath: relativePath
+      })
+    });
+    const payload = await parseResponseBody(deleteResponse);
+    const nextRevision = getPayloadRevision(payload);
+    if (nextRevision) currentRevision = nextRevision;
+
+    if (!deleteResponse.ok || !isRecord(payload) || payload.ok !== true) {
+      const payloadErrors = getPayloadErrors(payload);
+      errors = payloadErrors;
+      issues = getPayloadIssues(payload);
+      setStatus(deleteResponse.status === 409 ? 'warn' : 'error', payloadErrors[0] ?? '删除失败');
+      return;
+    }
+
+    const result = getPayloadDeleteResult(payload);
+    if (!result || !result.deleted || !result.trashedPath) {
+      errors = [];
+      issues = [];
+      setStatus('error', '删除响应异常，请检查开发日志');
+      return;
+    }
+
+    baselineFrontmatter = cloneFrontmatter(frontmatter);
+    baselineBody = body;
+    setStatus('ok', '已移到回收站');
+    window.location.assign(returnHref || '/admin/content/');
+  } catch {
+    errors = [];
+    issues = [];
+    setStatus('error', '删除请求失败，请稍后重试');
+  } finally {
+    busy = false;
+  }
+};
+
 const handleGuardedNavigationClick = (event: MouseEvent) => {
   if (!isDirty) return;
   if (!(event.target instanceof Element)) return;
@@ -663,12 +809,59 @@ $effect(() => {
 });
 
 $effect(() => {
+  if (editorLayoutRestored) return;
+  editorLayoutRestored = true;
+  editorLayout = readStoredEditorLayout() ?? 'stacked';
+});
+
+$effect(() => {
+  if (typeof document === 'undefined') return;
+
+  if (editorLayout === 'split') {
+    document.body.dataset.adminEditorLayout = 'split';
+  } else {
+    delete document.body.dataset.adminEditorLayout;
+  }
+
+  return () => {
+    if (document.body.dataset.adminEditorLayout === 'split') {
+      delete document.body.dataset.adminEditorLayout;
+    }
+  };
+});
+
+$effect(() => {
+  if (typeof document === 'undefined') return;
+  const actionsEl = topActionsEl;
+  const host = document.querySelector<HTMLElement>(PAGE_ACTIONS_HOST_SELECTOR);
+  if (!actionsEl || !host) return;
+
+  const placeholder = document.createComment('admin-editor-page-actions');
+  const originalParent = actionsEl.parentNode;
+  const originalNextSibling = actionsEl.nextSibling;
+  originalParent?.insertBefore(placeholder, actionsEl);
+  host.append(actionsEl);
+
+  return () => {
+    if (placeholder.parentNode) {
+      placeholder.replaceWith(actionsEl);
+      return;
+    }
+
+    originalParent?.insertBefore(actionsEl, originalNextSibling);
+  };
+});
+
+$effect(() => {
   const cleanupDetailsMenus = [
     initAdminDetailsMenus({
       selector: '.admin-editor-shell__preview-detail'
     }),
     initAdminDetailsMenus({
       selector: '.admin-editor-markdown-toolbar__heading'
+    }),
+    initAdminDetailsMenus({
+      selector: '.admin-editor-shell__action-more'
     })
   ];
 
@@ -779,7 +972,7 @@ $effect(() => {
 });
 </script>
 
-<section class="admin-editor-shell">
+<section class="admin-editor-shell" data-layout={editorLayout}>
   <div class="admin-editor-shell__format-row">
     <div class="admin-editor-markdown-toolbar" role="toolbar" aria-label="Markdown 常用格式">
       <details
@@ -830,6 +1023,65 @@ $effect(() => {
         </button>
       {/each}
     </div>
+
+    <div class="admin-editor-shell__layout-controls" aria-label="编辑器布局">
+      <button
+        class="admin-editor-markdown-toolbar__button admin-editor-layout-toggle"
+        type="button"
+        data-tooltip={editorLayoutToggleLabel}
+        aria-label={editorLayoutToggleLabel}
+        aria-pressed={editorLayout === 'split' ? 'true' : 'false'}
+        onclick={toggleEditorLayout}
+      >
+        <AdminEditorIcon name={editorLayoutToggleIcon} size={16} strokeWidth={2} />
+      </button>
+    </div>
+
+  </div>
+
+  <div class="admin-editor-shell__top-actions" aria-label="文章操作" bind:this={topActionsEl}>
+    {#if statusText}
+      <p class="admin-status admin-status--inline" data-state={statusState} role="status" aria-live="polite" aria-atomic="true">{statusText}</p>
+    {/if}
+    <button class="admin-btn admin-btn--secondary admin-btn--compact" type="button" onclick={() => void requestContentWrite()} disabled={!canWriteContent}>
+      保存内容
+    </button>
+    <a class="admin-btn admin-btn--ghost admin-btn--compact" href={returnHref}>返回</a>
+    <details class="admin-editor-shell__action-more">
+      <summary class="admin-btn admin-btn--ghost admin-btn--compact admin-editor-shell__action-more-trigger" aria-label="更多文章操作">
+        <span>更多</span>
+        <AdminEditorIcon name="ellipsis" size={14} strokeWidth={2} />
+      </summary>
+      <div class="admin-content-menu-panel admin-editor-shell__action-menu" aria-label="更多文章操作">
+        <button
+          class="admin-content-menu-item"
+          type="button"
+          disabled={busy || !isDirty}
+          onclick={handleActionMenuReset}
+        >
+          <AdminEditorIcon name="rotate-ccw" size={14} strokeWidth={2} class="admin-icon" />
+          <span>还原更改</span>
+        </button>
+        <a
+          class="admin-content-menu-item"
+          href={exportHref}
+          download
+          onclick={handleActionMenuDownload}
+        >
+          <AdminEditorIcon name="download" size={14} strokeWidth={2} class="admin-icon" />
+          <span>下载文章</span>
+        </a>
+        <button
+          class="admin-content-menu-item admin-content-menu-item--danger"
+          type="button"
+          disabled={busy}
+          onclick={(event) => void deleteContentEntry(event)}
+        >
+          <AdminEditorIcon name="trash" size={14} strokeWidth={2} class="admin-icon" />
+          <span>删除文章</span>
+        </button>
+      </div>
+    </details>
   </div>
 
   <div class="admin-editor-shell__layout">
@@ -1017,7 +1269,7 @@ $effect(() => {
       <button class="admin-btn admin-btn--ghost admin-btn--compact" type="button" onclick={resetToBaseline} disabled={busy || !isDirty}>
         还原
       </button>
-      <button class="admin-btn admin-btn--primary admin-btn--compact" type="button" onclick={() => void requestContentWrite()} disabled={!canWriteContent}>
+      <button class="admin-btn admin-btn--secondary admin-btn--compact" type="button" onclick={() => void requestContentWrite()} disabled={!canWriteContent}>
         保存内容
       </button>
     </div>

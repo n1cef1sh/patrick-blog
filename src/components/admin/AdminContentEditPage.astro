@@ -10,7 +10,9 @@ import {
   type AdminContentCollectionKey
 } from '../../lib/admin-console/content';
 import {
+  ADMIN_CONTENT_DELETE_API_PATH,
   ADMIN_CONTENT_ENTRY_API_PATH,
+  ADMIN_CONTENT_EXPORT_API_PATH,
   ADMIN_IMAGE_LIST_API_PATH,
   ADMIN_IMAGE_META_API_PATH,
   ADMIN_IMAGE_UPLOAD_API_PATH,
@@ -96,6 +98,8 @@ const shouldUseLegacyContentEditor = Boolean(bitsEditorPayload);
 const shouldUseSvelteEssayEditor = Boolean(EssayEditorIsland);
 const contentEditorBodyClass = shouldUseSvelteEssayEditor ? 'admin-page--content-editor' : undefined;
 const adminContentEntryEndpoint = withBase(ADMIN_CONTENT_ENTRY_API_PATH);
+const adminContentExportEndpoint = withBase(ADMIN_CONTENT_EXPORT_API_PATH);
+const adminContentDeleteEndpoint = withBase(ADMIN_CONTENT_DELETE_API_PATH);
 const adminPreviewEndpoint = withBase(ADMIN_PREVIEW_API_PATH);
 const adminContentBootstrap = bitsEditorPayload
   ? JSON.stringify({
@@ -224,10 +228,19 @@ const bitsImageRows = selectedBitsImageRows.length > 0
                 <code>{selectedEntryEditorPayload.relativePath}</code>
               </p>
             </div>
-            <div class="admin-content-actions">
+            <div
+              class="admin-content-actions"
+              data-admin-editor-page-actions-host={shouldUseSvelteEssayEditor ? true : undefined}
+            >
               {
                 shouldUseSvelteEssayEditor ? (
-                  <a class="admin-btn admin-btn--ghost admin-btn--compact" href={withBase('/admin/content/')}>返回</a>
+                  <a
+                    class="admin-btn admin-btn--ghost admin-btn--compact"
+                    href={withBase('/admin/content/')}
+                    data-admin-editor-page-actions-fallback
+                  >
+                    返回
+                  </a>
                 ) : (
                   <>
                     <a class="admin-btn admin-btn--ghost" href={collectionHref}>返回列表</a>
@@ -243,10 +256,14 @@ const bitsImageRows = selectedBitsImageRows.length > 0
               <article class="admin-content-editor admin-content-editor--svelte">
                 <EssayEditorIsland
                   endpoint={adminContentEntryEndpoint}
+                  exportEndpoint={adminContentExportEndpoint}
+                  deleteEndpoint={adminContentDeleteEndpoint}
                   previewEndpoint={adminPreviewEndpoint}
                   imageUploadEndpoint={adminImageUploadEndpoint}
+                  returnHref={withBase('/admin/content/')}
                   collection="essay"
                   entryId={essayEditorPayload!.entryId}
+                  relativePath={essayEditorPayload!.relativePath}
                   defaultPublicSlug={essayEditorPayload!.defaultPublicSlug}
                   revision={essayEditorPayload!.revision}
                   initialFrontmatter={essayEditorPayload!.values}

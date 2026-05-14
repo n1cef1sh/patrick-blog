@@ -18,7 +18,7 @@ export const ADMIN_ROUTES = [
     id: 'overview',
     href: '/admin/',
     label: 'Overview',
-    description: '站点快照'
+    description: '后台首页'
   },
   {
     id: 'theme',
@@ -30,19 +30,19 @@ export const ADMIN_ROUTES = [
     id: 'content',
     href: '/admin/content/',
     label: 'Content',
-    description: '内容索引与 frontmatter 控制台'
+    description: '内容管理'
   },
   {
     id: 'images',
     href: '/admin/images/',
     label: 'Images',
-    description: '图片浏览与路径辅助'
+    description: '图片管理'
   },
   {
     id: 'checks',
     href: '/admin/checks/',
     label: 'Checks',
-    description: '结构化诊断与发布前自检'
+    description: '站点诊断'
   },
   {
     id: 'data',

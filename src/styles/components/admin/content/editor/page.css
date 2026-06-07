@@ -166,3 +166,61 @@ body.admin-page--content-editor .admin-editor-shell__actions {
 .admin-content-info-trigger[data-invalid='true']::after {
   background: var(--admin-status-danger-accent);
 }
+
+.admin-editor-recovery {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.admin-editor-recovery[hidden],
+.admin-editor-recovery__trigger[hidden] {
+  display: none;
+}
+
+.admin-editor-recovery__trigger.admin-badge {
+  min-height: 22px;
+  padding: 0 8px;
+  border-radius: 4px;
+  font-family: var(--admin-font-ui);
+  letter-spacing: 0.03em;
+  text-transform: none;
+  cursor: pointer;
+}
+
+.admin-editor-recovery__trigger.admin-badge:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.admin-editor-recovery-modal {
+  --admin-modal-width: 460px;
+  --admin-modal-max-height: calc(100vh - 44px);
+}
+
+.admin-editor-recovery-modal[hidden] {
+  display: none;
+}
+
+.admin-editor-recovery-modal__panel {
+  grid-template-rows: auto auto auto;
+}
+
+.admin-editor-recovery-modal__body {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-editor-recovery-modal__command {
+  display: block;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--admin-control-border) 82%, transparent);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--bg) 90%, var(--panel) 10%);
+  color: var(--text);
+  font-family: var(--admin-font-mono);
+  font-size: var(--admin-text-sm);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}

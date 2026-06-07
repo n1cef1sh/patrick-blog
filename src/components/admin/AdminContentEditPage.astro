@@ -73,6 +73,9 @@ const adminStylesHref = contentEditDevState?.stylesHref ?? adminShellStylesHref;
 const collectionHref = withBase(getAdminContentEntryListHref(collection));
 const shouldUseEditorPageLayout = Boolean(EditorIsland && workspaceEditorPayload && editorRegistration);
 const contentEditorBodyClass = shouldUseEditorPageLayout ? 'admin-page--content-editor' : undefined;
+const adminEditorRecoveryScriptHref = isDev && shouldUseEditorPageLayout
+  ? (await import('../../scripts/admin-content/editor-recovery.ts?url')).default
+  : null;
 const memoPublicTitle = workspaceEditorPayload?.collection === 'memo'
   ? resolveMemoDisplayText(settings.page.memo.title, workspaceEditorPayload.values.title, DEFAULT_MEMO_TITLE)
   : DEFAULT_MEMO_TITLE;
@@ -133,6 +136,14 @@ const infoTrigger = shouldUseEditorPageLayout ? editorRegistration?.infoTrigger 
   bodyClass={contentEditorBodyClass}
   adminSidebarScope="page"
 >
+  {
+    adminEditorRecoveryScriptHref ? (
+      <Fragment slot="head">
+        <script is:inline type="module" src={adminEditorRecoveryScriptHref}></script>
+      </Fragment>
+    ) : null
+  }
+
   <AdminShell
     currentRoute="content"
     title="Content Console"
@@ -168,6 +179,24 @@ const infoTrigger = shouldUseEditorPageLayout ? editorRegistration?.infoTrigger 
                         >
                           {infoTrigger.label}
                         </button>
+                      ) : null
+                    }
+                    {
+                      adminEditorRecoveryScriptHref ? (
+                        <span class="admin-editor-recovery" data-admin-editor-recovery hidden>
+                          <button
+                            class="admin-editor-recovery__trigger admin-badge"
+                            type="button"
+                            data-admin-editor-recovery-trigger
+                            data-tone="warning"
+                            aria-haspopup="dialog"
+                            aria-controls="admin-editor-recovery-dialog"
+                            aria-expanded="false"
+                            hidden
+                          >
+                            Dev 缓存异常
+                          </button>
+                        </span>
                       ) : null
                     }
                   </div>
@@ -208,6 +237,65 @@ const infoTrigger = shouldUseEditorPageLayout ? editorRegistration?.infoTrigger 
               }
             </div>
           </header>
+
+          {
+            adminEditorRecoveryScriptHref ? (
+              <div
+                class="admin-modal admin-editor-recovery-modal"
+                id="admin-editor-recovery-dialog"
+                data-admin-editor-recovery-modal
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="admin-editor-recovery-title"
+                hidden
+              >
+                <button
+                  type="button"
+                  class="admin-modal__backdrop"
+                  data-admin-editor-recovery-close="restore"
+                  aria-label="关闭"
+                ></button>
+                <section class="admin-modal__panel admin-editor-recovery-modal__panel">
+                  <header class="admin-modal__head">
+                    <h3 class="admin-modal__title" id="admin-editor-recovery-title">本地依赖缓存已过期</h3>
+                    <button
+                      class="admin-btn admin-btn--ghost admin-btn--compact"
+                      type="button"
+                      data-admin-editor-recovery-close="restore"
+                    >
+                      关闭
+                    </button>
+                  </header>
+                  <div class="admin-modal__body admin-editor-recovery-modal__body">
+                    <p class="admin-content-copy">
+                      编辑器模块加载失败，通常由 Vite dev 依赖缓存失配导致。
+                    </p>
+                    <p class="admin-content-copy">
+                      请停止当前 dev server 后运行：
+                    </p>
+                    <code class="admin-editor-recovery-modal__command" data-admin-editor-recovery-command>npm run dev:clean</code>
+                    <p class="admin-content-muted" data-admin-editor-recovery-status aria-live="polite"></p>
+                  </div>
+                  <footer class="admin-modal__actions">
+                    <button
+                      class="admin-btn admin-btn--primary admin-btn--compact"
+                      type="button"
+                      data-admin-editor-recovery-copy
+                    >
+                      复制命令
+                    </button>
+                    <button
+                      class="admin-btn admin-btn--ghost admin-btn--compact"
+                      type="button"
+                      data-admin-editor-recovery-reload
+                    >
+                      刷新页面
+                    </button>
+                  </footer>
+                </section>
+              </div>
+            ) : null
+          }
 
           {
             EditorIsland && editorIslandProps ? (

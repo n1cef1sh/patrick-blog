@@ -7,6 +7,7 @@ const {
   title,
   excerpt,
   date,
+  updatedAt = null,
   visibleTags = [],
   badge = '随笔',
   slug = '',
@@ -16,6 +17,7 @@ const {
   title: string;
   excerpt?: string | null;
   date: Date;
+  updatedAt?: Date | null;
   visibleTags?: string[];
   badge?: string;
   slug?: string;
@@ -23,6 +25,8 @@ const {
 };
 const displayBadge = badge.trim() ? badge : '随笔';
 const shouldShowMetaLine = articleMetaSettings.showDate || (articleMetaSettings.showTags && visibleTags.length > 0);
+const displayDate = updatedAt ?? date;
+const displayDateLabel = updatedAt ? '更新于：' : (articleMetaSettings.dateLabel ?? '');
 ---
 
 <a
@@ -42,7 +46,7 @@ const shouldShowMetaLine = articleMetaSettings.showDate || (articleMetaSettings.
     <div class="meta-line meta-line--items">
       {articleMetaSettings.showDate ? (
         <span class="meta-line__item">
-          {articleMetaSettings.dateLabel ? `${articleMetaSettings.dateLabel}` : ''}{formatISODateUtc(date)}
+          <time datetime={displayDate.toISOString()}>{`${displayDateLabel}${formatISODateUtc(displayDate)}`}</time>
         </span>
       ) : null}
       {articleMetaSettings.showTags && visibleTags.length ? (

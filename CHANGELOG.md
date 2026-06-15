@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog, and this project aims to follow Semantic Versioning.
 
 
-## [Unreleased]
+## [0.5.0] - 2026-06-16
 
 ### Added
 - `/about/` 新增友链区块，支持展示友链列表、申请入口和说明文案。
@@ -21,7 +21,7 @@ The format is based on Keep a Changelog, and this project aims to follow Semanti
 
 ### Changed
 - 默认关于页调整为站点介绍页，不再默认展示主题说明、技术栈和部署问答。
-- 优化本地后台在窄桌面窗口下的布局表现，减少横向滚动、控件遮挡和工作区挤压
+- 优化本地后台在窄桌面窗口下的布局表现，减少横向滚动、控件遮挡和工作区挤压。
 - Content Console 改为直接基于源文件展示内容列表，提升开发环境中新建、保存和删除文章后的刷新稳定性。
 - Content Console 现在统一展示 essay、bits、memo 和 about 内容入口；memo 与 about 仍是固定单页内容，不支持创建或删除。
 - `/memo/` 页面顶部引言现在可在本地后台的 memo 编辑页中维护；建议将旧版引言迁移到 `src/content/memo/index.md` 正文开头（第一个 H2 前），未迁移的站点仍保留兼容显示。
@@ -260,3 +260,14 @@ node ".\export-astro-whono-settings.mjs" --include-legacy
 - 修复早期类型检查、文档路径与引用样式问题。
 - 修复深色模式下代码块背景与高亮异常。
 - 修复部分未使用样式与细节遗留问题。
+
+
+[Unreleased]: https://github.com/cxro/astro-whono/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/cxro/astro-whono/compare/v0.4.1...v0.5.0
+[0.4.1]: https://github.com/cxro/astro-whono/compare/v0.4.0...v0.4.1
+[0.4.0]: https://github.com/cxro/astro-whono/compare/v0.3.1...v0.4.0
+[0.3.1]: https://github.com/cxro/astro-whono/compare/v0.3.0...v0.3.1
+[0.3.0]: https://github.com/cxro/astro-whono/compare/v0.2.0...v0.3.0
+[0.2.0]: https://github.com/cxro/astro-whono/compare/v0.1.1...v0.2.0
+[0.1.1]: https://github.com/cxro/astro-whono/compare/v0.1.0...v0.1.1
+[0.1.0]: https://github.com/cxro/astro-whono/releases/tag/v0.1.0

@@ -4,7 +4,7 @@
 
 [![CI](https://img.shields.io/github/actions/workflow/status/cxro/astro-whono/ci.yml?style=flat&label=CI&labelColor=2E3440&color=A3BE8C&logo=githubactions&logoColor=ECEFF4)](https://github.com/cxro/astro-whono/actions/workflows/ci.yml)  [![Node](https://img.shields.io/badge/Node-%3E%3D22.12.0-81A1C1?style=flat&labelColor=2E3440&logo=nodedotjs&logoColor=ECEFF4)](https://github.com/cxro/astro-whono#%E7%8E%AF%E5%A2%83%E8%A6%81%E6%B1%82)  [![Astro](https://img.shields.io/github/package-json/dependency-version/cxro/astro-whono/astro?branch=main&style=flat&label=Astro&labelColor=2E3440&color=BC52EE&logo=astro&logoColor=ECEFF4)](https://docs.astro.build/)  [![License](https://img.shields.io/badge/License-MIT-4C566A?style=flat&labelColor=2E3440&logo=opensourceinitiative&logoColor=ECEFF4)](LICENSE)
 
-**✨ astro-whono 现已升级至 Astro v6**
+**✨ astro-whono 现已支持本地后台可视化预览写作**
 
 一个极简双栏的 Astro 主题，用于个人写作与轻量内容发布。
 
@@ -174,6 +174,8 @@ npm run dev
 | `/admin/data/` | 可用 | settings 快照导出 / dry-run 导入 / 确认写入 |
 | `/admin/content/` | 可用 | 内容管理、新建随笔 / 絮语草稿，支持随笔 / 絮语 / 小记 / 关于页的本地编辑与源文件导出 |
 
+> 使用详情：[Admin Console 快速指南](https://astro.whono.me/archive/admin-console-guide/) · [Theme Console 配置指南](https://astro.whono.me/archive/theme-console-guide/) · [Content Console 使用指南](https://astro.whono.me/archive/content-console-guide/)
+
 
 <details>
 <summary><strong>🖼️ Theme Console 简介 </strong></summary>
@@ -219,6 +221,7 @@ Theme Console 主要面向**站点级**和**页面级**配置，支持内容：
 - 随笔：位于 `src/content/essay` 目录
 - 絮语：位于 `src/content/bits` 目录
 - 小记：位于 `src/content/memo/index.md`
+- 关于：位于 `src/content/about/index.md`（固定单页）
 - 归档：由随笔集合按 `archive` 字段生成目录视图
 
 主要路由：

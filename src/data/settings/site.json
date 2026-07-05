@@ -1,6 +1,6 @@
 {
-  "title": "Astro Themes by Whono",
-  "description": "一个 Astro 主题的展示站：轻量、可维护、可复用。",
+  "title": "Patrick's Blog",
+  "description": "Patrick's Blog",
   "defaultLocale": "zh-CN",
   "footer": {
     "startYear": 2025,
@@ -12,9 +12,9 @@
     "hiddenMessage": "作者暂未公开此页面。"
   },
   "socialLinks": {
-    "github": "https://github.com/cxro/astro-whono",
-    "x": "https://twitter.com/yourname",
-    "email": "Astro@Whono.me",
+    "github": "https://github.com/n1cef1sh",
+    "x": null,
+    "email": "nicefish2018@163.com",
     "presetOrder": {
       "github": 1,
       "x": 2,

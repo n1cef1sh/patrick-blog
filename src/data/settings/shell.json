@@ -1,10 +1,10 @@
 {
-  "brandTitle": "Whono",
-  "quote": "A minimal Astro theme\nfor essays, notes, and docs.\nDesigned for reading,\nopen-source.",
+  "brandTitle": "Patrick",
+  "quote": "保持思考，及时记录，持续输出。",
   "nav": [
     {
       "id": "essay",
-      "label": "随笔",
+      "label": "文章",
       "ornament": "·",
       "visible": true,
       "order": 1
@@ -13,7 +13,7 @@
       "id": "bits",
       "label": "絮语",
       "ornament": "·",
-      "visible": true,
+      "visible": false,
       "order": 2
     },
     {

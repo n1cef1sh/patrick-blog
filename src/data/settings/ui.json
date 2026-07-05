@@ -3,16 +3,16 @@
     "showLineNumbers": true
   },
   "readingMode": {
-    "showEntry": true
+    "showEntry": false
   },
   "sidebarActions": {
-    "showRssLink": true,
+    "showRssLink": false,
     "showThemeToggle": true,
-    "showAdminEntry": false
+    "showAdminEntry": true
   },
   "articleMeta": {
     "showDate": true,
-    "dateLabel": "发布于：",
+    "dateLabel": "发布于",
     "showTags": true,
     "showWordCount": true,
     "showReadingTime": true
